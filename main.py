@@ -17,30 +17,37 @@ def download_file(file_url, directory):
      except requests.RequestException as e:
          print(f"Error downloading {file_url}: {e}")
 
-def getUserInfo (usernumber):
+
+def getPageCount (usernumber):
     url = "https://dad.gallery/users/" + str(usernumber) + "/submissions"
     response = requests.get(url)
     html_content = response.text
     soup = BeautifulSoup(html_content, 'html.parser')
 
-    #retrieve username
-    try:
-        imgurl = soup.find('img', {"class": "submissionThumbnail"})['src']
-    except:
-        print("User not found. Exiting.")
-        exit(0)
-    ind = str(imgurl).find("submissions/")
-    ind2 = str(imgurl).find("/drawing")
-    username = str(imgurl)[ind+12:ind2]
-
-    #retrieve pagecount
     pagenav = soup.find('a', {"class": "next_page"})
     if (pagenav == None):
         pagecount = 1
     else:
         pagecount = int(str(pagenav.previous_sibling.previous_sibling.contents)[2:-2])
 
-    return (username, pagecount)
+    return pagecount
+
+def getUsername (usernumber):
+    url = "https://dad.gallery/users/" + str(usernumber)
+    response = requests.get(url)
+    html_content = response.text
+    soup = BeautifulSoup(html_content, 'html.parser')
+
+    try:
+        avatarurl = soup.find('span', {"class": "fullSizeAvatar"}).img['src']
+        print(avatarurl + "\n")
+    except:
+        print("Username not found. Exiting.")
+        exit(0)
+    ind = str(avatarurl).find("users/")
+    ind2 = str(avatarurl).find("/avatar")
+
+    return str(avatarurl)[ind+6:ind2]
 
 def downloadPage (usernumber, username, pagenumber):
     url = "https://dad.gallery/users/" + str(usernumber) + "/submissions?page="
@@ -101,7 +108,8 @@ def main():
         usernumber = 13688
     print(usernumber)
     
-    username, pagecount = getUserInfo(usernumber)
+    username = getUsername(usernumber)
+    pagecount = getPageCount(usernumber)
     print("Downloading " + str(pagecount) + " pages of submissions from user " + username)
 
     os.makedirs('archive', exist_ok=True)
