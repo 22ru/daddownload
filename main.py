@@ -49,7 +49,7 @@ def getUsername (usernumber):
 
     return str(avatarurl)[ind+6:ind2]
 
-def downloadPage (usernumber, username, pagenumber):
+def downloadPage (usernumber, username, pagenumber, forceFlag):
     url = "https://dad.gallery/users/" + str(usernumber) + "/submissions?page="
     response = requests.get(url+str(pagenumber))
     html_content = response.text
@@ -92,25 +92,41 @@ def downloadPage (usernumber, username, pagenumber):
         # This script runs newest submission to oldest.
         # I'm going to assume that if you hit a repeat file,
         # you have them all and we're not going to waste our time with the rest.
+        # Will not exit the program if a repeat submission is found and the
+        # force option was used
         if (os.path.exists(saveLocation)):
-            print("Repeat submission " + subNumber + ". Exiting.")
-            exit()
-
-        imgData = requests.get(subImg).content
-        imageFile = open(saveLocation, 'wb')
-        imageFile.write(imgData)
-        imageFile.close()
+            print("Repeat submission " + subNumber)
+            if (forceFlag == 0):
+                print("Exiting.")
+                exit()
+        else:
+            imgData = requests.get(subImg).content
+            imageFile = open(saveLocation, 'wb')
+            imageFile.write(imgData)
+            imageFile.close()
 
 def main():
-    try: 
-        usernumber = int(sys.argv[1])
-    except:
-        usernumber = 13688
-    print(usernumber)
-    
+    forceFlag = 0
+    for i in range(len(sys.argv)):
+        if (sys.argv[i][0] == '-') & (len(sys.argv[i]) > 1):
+            match sys.argv[i][1]:
+                case "f":
+                    forceFlag = 1
+                case _:
+                    print("Unknown flag option.")
+        else:
+            try: 
+                usernumber = int(sys.argv[i])
+            except:
+                usernumber = 13688
+                # this is triggered by the first argument "main.py"
+                # so we won't move past this loop without a usernumber
+
     username = getUsername(usernumber)
     pagecount = getPageCount(usernumber)
     print("Downloading " + str(pagecount) + " pages of submissions from user " + username)
+    if (forceFlag):
+        print("Forcing past previously downloaded submissions.")
 
     os.makedirs('archive', exist_ok=True)
     os.makedirs('archive/' + username, exist_ok=True)
@@ -120,7 +136,7 @@ def main():
 
     for i in range(1,pagecount+1):
         print("Downloading page " + str(i) + " of " + str(pagecount))
-        downloadPage(usernumber, username, i)
+        downloadPage(usernumber, username, i, forceFlag)
 
 if __name__ == "__main__":
     main()
